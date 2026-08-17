@@ -20,7 +20,13 @@ export default function Login({ onLoginSuccess, navigate, addToast }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
-      const data = await response.json();
+      const text = await response.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(response.ok ? 'Unexpected response format' : `Server error (${response.status})`);
+      }
 
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');

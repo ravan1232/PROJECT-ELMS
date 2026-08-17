@@ -86,9 +86,15 @@ function requireRole(role) {
 }
 
 // --- API ROUTES ---
+const apiRouter = express.Router();
+
+// Health Check
+apiRouter.get('/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
 
 // 1. Auth: Register (Employees only)
-app.post('/api/auth/register', async (req, res) => {
+apiRouter.post('/auth/register', async (req, res) => {
   const { username, password } = req.body;
   
   if (!username || !password) {
@@ -120,7 +126,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // 2. Auth: Login
-app.post('/api/auth/login', async (req, res) => {
+apiRouter.post('/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -160,7 +166,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // 3. Leaves: Apply (Employees only)
-app.post('/api/leaves/apply', authenticateToken, requireRole('employee'), upload.single('document'), async (req, res) => {
+apiRouter.post('/leaves/apply', authenticateToken, requireRole('employee'), upload.single('document'), async (req, res) => {
   const { reason, start_date, end_date } = req.body;
 
   if (!reason || !start_date || !end_date) {
@@ -194,7 +200,7 @@ app.post('/api/leaves/apply', authenticateToken, requireRole('employee'), upload
 });
 
 // 4. Leaves: Get History (Employees only)
-app.get('/api/leaves/employee', authenticateToken, requireRole('employee'), async (req, res) => {
+apiRouter.get('/leaves/employee', authenticateToken, requireRole('employee'), async (req, res) => {
   try {
     const leaves = await all(
       'SELECT id, reason, start_date, end_date, document_path, document_name, status, manager_remarks, created_at FROM leave_requests WHERE user_id = ? ORDER BY created_at DESC',
@@ -208,8 +214,7 @@ app.get('/api/leaves/employee', authenticateToken, requireRole('employee'), asyn
 });
 
 // 5. Leaves: Get Notifications (Employees only)
-// Fetches leave requests that were updated (Approved/Rejected) and haven't been shown as notifications yet.
-app.get('/api/leaves/notifications', authenticateToken, requireRole('employee'), async (req, res) => {
+apiRouter.get('/leaves/notifications', authenticateToken, requireRole('employee'), async (req, res) => {
   try {
     const notifications = await all(
       `SELECT id, status, manager_remarks, reason, start_date, end_date 
@@ -233,7 +238,7 @@ app.get('/api/leaves/notifications', authenticateToken, requireRole('employee'),
 });
 
 // 6. Manager: Get All Employees (Manager only)
-app.get('/api/manager/employees', authenticateToken, requireRole('manager'), async (req, res) => {
+apiRouter.get('/manager/employees', authenticateToken, requireRole('manager'), async (req, res) => {
   try {
     const employees = await all(`
       SELECT 
@@ -268,7 +273,7 @@ app.get('/api/manager/employees', authenticateToken, requireRole('manager'), asy
 });
 
 // 7. Manager: Get All Leave Requests (Manager only)
-app.get('/api/manager/leaves', authenticateToken, requireRole('manager'), async (req, res) => {
+apiRouter.get('/manager/leaves', authenticateToken, requireRole('manager'), async (req, res) => {
   try {
     const leaves = await all(`
       SELECT 
@@ -295,7 +300,7 @@ app.get('/api/manager/leaves', authenticateToken, requireRole('manager'), async 
 });
 
 // 8. Manager: Approve/Reject Leave Request (Manager only)
-app.put('/api/manager/leaves/:id', authenticateToken, requireRole('manager'), async (req, res) => {
+apiRouter.put('/manager/leaves/:id', authenticateToken, requireRole('manager'), async (req, res) => {
   const { status, manager_remarks } = req.body;
   const leaveId = req.params.id;
 
@@ -321,6 +326,10 @@ app.put('/api/manager/leaves/:id', authenticateToken, requireRole('manager'), as
   }
 });
 
+// Mount router on both /api and / so all Vercel/local routing variations work
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
+
 // Serve static frontend files if available (for fullstack platforms like Render, Railway, etc.)
 const rootDist = path.join(__dirname, '../dist');
 const frontendDist = path.join(__dirname, '../frontend/dist');
@@ -329,8 +338,8 @@ const distPath = fs.existsSync(rootDist) ? rootDist : (fs.existsSync(frontendDis
 if (distPath) {
   app.use(express.static(distPath));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-      return next();
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/auth') || req.path.startsWith('/leaves') || req.path.startsWith('/manager')) {
+      return res.status(404).json({ message: 'API route not found' });
     }
     res.sendFile(path.join(distPath, 'index.html'));
   });
