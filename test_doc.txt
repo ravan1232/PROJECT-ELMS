@@ -1,0 +1,4 @@
+Medical certificate for leave request verification.
+Doctor: Dr. Sarah Connor
+Date: 2026-08-06
+Approved for rest.
