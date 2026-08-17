@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL } from '../config';
 import { 
   Calendar, 
   FileText, 
@@ -38,7 +39,7 @@ export default function EmployeeDashboard({ token, user, onLogout, addToast }) {
   const fetchLeaves = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/leaves/employee', {
+      const response = await fetch(`${API_BASE_URL}/api/leaves/employee`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch leave history');
@@ -54,7 +55,7 @@ export default function EmployeeDashboard({ token, user, onLogout, addToast }) {
   // Poll for notifications
   const checkNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/leaves/notifications', {
+      const response = await fetch(`${API_BASE_URL}/api/leaves/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) return;
@@ -120,7 +121,7 @@ export default function EmployeeDashboard({ token, user, onLogout, addToast }) {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/leaves/apply', {
+      const response = await fetch(`${API_BASE_URL}/api/leaves/apply`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -312,7 +313,7 @@ export default function EmployeeDashboard({ token, user, onLogout, addToast }) {
                     <td>
                       {leave.document_path ? (
                         <a 
-                          href={`http://localhost:5000${leave.document_path}`} 
+                          href={`${API_BASE_URL}${leave.document_path}`} 
                           target="_blank" 
                           rel="noreferrer"
                           className="btn btn-secondary"

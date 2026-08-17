@@ -2,12 +2,22 @@
   "name": "employee-leave-management-system",
   "version": "1.0.0",
   "description": "Employee Leave Management System with Auth, Role-based Access, and File Uploads",
-  "main": "index.js",
+  "main": "api/index.js",
   "scripts": {
     "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "backend": "npm start --prefix backend",
     "frontend": "npm run dev --prefix frontend",
+    "build": "cd frontend && npm install && npm run build",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

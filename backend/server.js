@@ -16,11 +16,31 @@ app.use(cors());
 app.use(express.json());
 
 // Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
+const uploadsDir = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 app.use('/uploads', express.static(uploadsDir));
+
+let dbInitPromise = null;
+function ensureDbInit() {
+  if (!dbInitPromise) {
+    dbInitPromise = initDb();
+  }
+  return dbInitPromise;
+}
+
+// Middleware to ensure DB is initialized before handling requests
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbInit();
+    next();
+  } catch (err) {
+    console.error('Database initialization error:', err);
+    res.status(500).json({ message: 'Database initialization error' });
+  }
+});
 
 // Multer Storage Configuration for file uploads
 const storage = multer.diskStorage({
@@ -301,14 +321,18 @@ app.put('/api/manager/leaves/:id', authenticateToken, requireRole('manager'), as
   }
 });
 
-// Initialize database and start server
-initDb()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
+// Initialize database and start server if executed directly
+if (require.main === module) {
+  ensureDbInit()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Database initialization failed:', err);
+      process.exit(1);
     });
-  })
-  .catch((err) => {
-    console.error('Database initialization failed:', err);
-    process.exit(1);
-  });
+}
+
+module.exports = app;

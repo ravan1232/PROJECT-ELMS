@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config';
 import { 
   Calendar, 
   FileText, 
@@ -30,7 +31,7 @@ export default function ManagerDashboard({ token, user, onLogout, addToast }) {
 
   const fetchLeaves = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/manager/leaves', {
+      const response = await fetch(`${API_BASE_URL}/api/manager/leaves`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch leave requests');
@@ -43,7 +44,7 @@ export default function ManagerDashboard({ token, user, onLogout, addToast }) {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/manager/employees', {
+      const response = await fetch(`${API_BASE_URL}/api/manager/employees`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to fetch employee list');
@@ -69,7 +70,7 @@ export default function ManagerDashboard({ token, user, onLogout, addToast }) {
 
     setReviewLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/manager/leaves/${selectedLeave.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/manager/leaves/${selectedLeave.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -321,7 +322,7 @@ export default function ManagerDashboard({ token, user, onLogout, addToast }) {
                         <td>
                           {leave.document_path ? (
                             <a 
-                              href={`http://localhost:5000${leave.document_path}`} 
+                              href={`${API_BASE_URL}${leave.document_path}`} 
                               target="_blank" 
                               rel="noreferrer"
                               className="btn btn-secondary"
@@ -484,7 +485,7 @@ export default function ManagerDashboard({ token, user, onLogout, addToast }) {
                 <label className="form-label" style={{ marginBottom: '0.2rem' }}>Supporting Document</label>
                 <div>
                   <a 
-                    href={`http://localhost:5000${selectedLeave.document_path}`} 
+                    href={`${API_BASE_URL}${selectedLeave.document_path}`} 
                     target="_blank" 
                     rel="noreferrer"
                     className="btn btn-secondary"
