@@ -321,6 +321,18 @@ app.put('/api/manager/leaves/:id', authenticateToken, requireRole('manager'), as
   }
 });
 
+// Serve static frontend files if available (for fullstack platforms like Render, Railway, etc.)
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 // Initialize database and start server if executed directly
 if (require.main === module) {
   ensureDbInit()

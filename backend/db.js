@@ -6,6 +6,12 @@ const bcrypt = require('bcryptjs');
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 const dbPath = isVercel ? path.join('/tmp', 'database.sqlite') : path.join(__dirname, 'database.sqlite');
 
+try {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+} catch (e) {
+  // directory already exists or handled
+}
+
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);
