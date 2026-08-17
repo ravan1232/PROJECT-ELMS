@@ -330,20 +330,69 @@ apiRouter.put('/manager/leaves/:id', authenticateToken, requireRole('manager'), 
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
-// Serve static frontend files if available (for fullstack platforms like Render, Railway, etc.)
-const rootDist = path.join(__dirname, '../dist');
-const frontendDist = path.join(__dirname, '../frontend/dist');
-const distPath = fs.existsSync(rootDist) ? rootDist : (fs.existsSync(frontendDist) ? frontendDist : null);
+// Dynamic frontend dist resolver for fullstack platforms (Render, Railway, etc.)
+const candidateDistPaths = [
+  path.join(__dirname, '../dist'),
+  path.join(__dirname, '../frontend/dist'),
+  path.join(process.cwd(), 'dist'),
+  path.join(process.cwd(), 'frontend/dist')
+];
 
-if (distPath) {
-  app.use(express.static(distPath));
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/auth') || req.path.startsWith('/leaves') || req.path.startsWith('/manager')) {
-      return res.status(404).json({ message: 'API route not found' });
+function getDistPath() {
+  for (const p of candidateDistPaths) {
+    if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+      return p;
     }
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
+  }
+  return null;
 }
+
+// Serve static assets dynamically
+app.use((req, res, next) => {
+  const dist = getDistPath();
+  if (dist) {
+    return express.static(dist)(req, res, next);
+  }
+  next();
+});
+
+// SPA Route Fallback
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/auth') || req.path.startsWith('/leaves') || req.path.startsWith('/manager')) {
+    return res.status(404).json({ message: 'API route not found' });
+  }
+
+  const dist = getDistPath();
+  if (dist) {
+    return res.sendFile(path.join(dist, 'index.html'));
+  }
+
+  // Helpful status message if frontend build is missing
+  res.status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>ELMS Server</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b0f19; color: #f3f4f6; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+          .card { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 2.5rem; text-align: center; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+          h1 { font-size: 1.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #a78bfa, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+          p { color: #9ca3af; font-size: 0.95rem; line-height: 1.5; }
+          a { color: #818cf8; text-decoration: none; font-weight: 500; }
+          .badge { display: inline-block; padding: 0.25rem 0.75rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; margin-top: 1rem; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>Employee Leave Management System</h1>
+          <p>Backend API is active and database is operational.</p>
+          <div class="badge">API Health: OK</div>
+          <p style="margin-top: 1.5rem; font-size: 0.85rem;">Check API status: <a href="/api/health">/api/health</a></p>
+        </div>
+      </body>
+    </html>
+  `);
+});
 
 // Initialize database and start server if executed directly
 if (require.main === module) {

@@ -4,6 +4,7 @@
   "description": "Employee Leave Management System with Auth, Role-based Access, and File Uploads",
   "main": "api/index.js",
   "scripts": {
+    "postinstall": "npm run build",
     "install-all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "start": "node backend/server.js",
     "backend": "npm start --prefix backend",
