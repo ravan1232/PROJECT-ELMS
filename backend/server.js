@@ -338,33 +338,47 @@ const candidateDistPaths = [
   path.join(process.cwd(), 'frontend/dist')
 ];
 
-function getDistPath() {
+let cachedDistPath = null;
+let cachedStaticMiddleware = null;
+
+function getDistInfo() {
+  if (cachedDistPath && cachedStaticMiddleware) {
+    return { distPath: cachedDistPath, middleware: cachedStaticMiddleware };
+  }
+
   for (const p of candidateDistPaths) {
     if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
-      return p;
+      cachedDistPath = p;
+      cachedStaticMiddleware = express.static(p);
+      return { distPath: cachedDistPath, middleware: cachedStaticMiddleware };
     }
   }
-  return null;
+  return { distPath: null, middleware: null };
 }
 
-// Serve static assets dynamically
+// Catch-all for unhandled /api/* requests (all HTTP methods)
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ message: 'API route not found' });
+});
+
+// Serve static assets dynamically with cached middleware
 app.use((req, res, next) => {
-  const dist = getDistPath();
-  if (dist) {
-    return express.static(dist)(req, res, next);
+  const { middleware } = getDistInfo();
+  if (middleware) {
+    return middleware(req, res, next);
   }
   next();
 });
 
 // SPA Route Fallback
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/auth') || req.path.startsWith('/leaves') || req.path.startsWith('/manager')) {
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/uploads') || req.path.startsWith('/auth') || req.path.startsWith('/leaves') || req.path.startsWith('/manager')) {
     return res.status(404).json({ message: 'API route not found' });
   }
 
-  const dist = getDistPath();
-  if (dist) {
-    return res.sendFile(path.join(dist, 'index.html'));
+  const { distPath } = getDistInfo();
+  if (distPath) {
+    return res.sendFile(path.join(distPath, 'index.html'));
   }
 
   // Helpful status message if frontend build is missing
