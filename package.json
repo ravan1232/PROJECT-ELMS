@@ -8,7 +8,7 @@
     "start": "node backend/server.js",
     "backend": "npm start --prefix backend",
     "frontend": "npm run dev --prefix frontend",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm install && npm run build && node -e \"const fs = require('fs'); if(!fs.existsSync('dist') && fs.existsSync('../dist')){fs.cpSync('../dist', 'dist', {recursive: true});} else if(fs.existsSync('dist') && !fs.existsSync('../dist')){fs.cpSync('dist', '../dist', {recursive: true});}\"",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\""
   },
   "dependencies": {

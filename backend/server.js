@@ -322,14 +322,17 @@ app.put('/api/manager/leaves/:id', authenticateToken, requireRole('manager'), as
 });
 
 // Serve static frontend files if available (for fullstack platforms like Render, Railway, etc.)
+const rootDist = path.join(__dirname, '../dist');
 const frontendDist = path.join(__dirname, '../frontend/dist');
-if (fs.existsSync(frontendDist)) {
-  app.use(express.static(frontendDist));
+const distPath = fs.existsSync(rootDist) ? rootDist : (fs.existsSync(frontendDist) ? frontendDist : null);
+
+if (distPath) {
+  app.use(express.static(distPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
       return next();
     }
-    res.sendFile(path.join(frontendDist, 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
